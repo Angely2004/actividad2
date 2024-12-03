@@ -2,9 +2,9 @@
 function save_data_supabase($email, $passwd) {
     // supabase database configuration
     $SUPABASE_URL = 'https://sgmaaskbrllwuhnmgfeg.supabase.co';
-    $SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNnbWFhc2ticmxsd3Vobm1nZmVnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzMxOTIwOTcsImV4cCI6MjA0ODc2ODA5N30.-iMegnHzxaVs0XoScVgm-GExTJdHgTKzjLZWfLyRmQI';
+    $SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNnbWFhc2ticmxsd3Vobm1nZmVnIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTczMzE5MjA5NywiZXhwIjoyMDQ4NzY4MDk3fQ.18_u3q1Pwi9Wmeo7MnfrefthpFb-riNyEjjeKD11ak4';
 
-    $url = "$SUPABASE_URL/rest/v1/clientes";
+    $url = "$SUPABASE_URL/rest/v1/users";
     $data = [ 
         'email' => $email,
         'password' => $passwd,
@@ -34,7 +34,7 @@ function save_data_supabase($email, $passwd) {
 }
 
 // Database connection
-require('../../config/db_connection.php');
+require('actividad2/config/db_connection.php');
 
 // Get data from register form
 $email = $_POST['email'];
