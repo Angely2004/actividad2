@@ -1,86 +1,77 @@
 <?php
-// Incluir la conexión a PostgreSQL
-include('db_connection.php');
+function save_data_supabase($email, $passwd) {
+    // supabase database configuration
+    $SUPABASE_URL = 'https://sgmaaskbrllwuhnmgfeg.supabase.co';
+    $SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNnbWFhc2ticmxsd3Vobm1nZmVnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzMxOTIwOTcsImV4cCI6MjA0ODc2ODA5N30.-iMegnHzxaVs0XoScVgm-GExTJdHgTKzjLZWfLyRmQI';
 
-// Parámetros de conexión con Supabase
-$supabase_url = "https://sgmaaskbrllwuhnmgfeg.supabase.co";
-$supabase_key = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNnbWFhc2ticmxsd3Vobm1nZmVnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzMxOTIwOTcsImV4cCI6MjA0ODc2ODA5N30.-iMegnHzxaVs0XoScVgm-GExTJdHgTKzjLZWfLyRmQI"; 
+    $url = "$SUPABASE_URL/rest/v1/clientes";
+    $data = [ 
+        'email' => $email,
+        'password' => $passwd,
+    ];
+    $options = [
+        'http' => [
+            'header' => [
+                "Content-Type: application/json",
+                "Authorization: Bearer $SUPABASE_KEY",
+                "apikey: $SUPABASE_KEY"
+            ],
+            'method' => 'POST',
+            'content' => json_encode($data),
+        ],
+    ];    
 
-// Verificar si se ha enviado el formulario
-if ($_SERVER["REQUEST_METHOD"] == "POST") {
-    // Recibir los datos del formulario
-    $first_name = $_POST['first_name'] ?? '';
-    $last_name = $_POST['last_name'] ?? '';
-    $email = $_POST['email'] ?? '';
-    $password = $_POST['password'] ?? '';
-    $confirm_password = $_POST['confirm_password'] ?? '';
-
-    // Validaciones básicas
-    if (empty($first_name) || empty($last_name) || empty($email) || empty($password) || empty($confirm_password)) {
-        $error = "Error: Todos los campos son obligatorios.";
+    $context = stream_context_create($options);
+    $response = file_get_contents($url, true, $context);
+    
+    if ($response === false) {
+        echo "Error: Unable to save data to Supabase";
+        exit;
     }
-
-    if ($password !== $confirm_password) {
-        $error = "Error: Las contraseñas no coinciden.";
-    }
-
-    // Validación de la contraseña (mínimo 6 caracteres, por ejemplo)
-    if (strlen($password) < 6) {
-        $error = "Error: La contraseña debe tener al menos 6 caracteres.";
-    }
-
-    // Si hay errores, mostrar el mensaje
-    if (isset($error)) {
-        echo "<div class='alert alert-danger'>$error</div>";
-    } else {
-        // Encriptar la contraseña
-        $hashed_password = password_hash($password, PASSWORD_DEFAULT);
-
-        // Insertar los datos en PostgreSQL
-        $query = "INSERT INTO clientes (first_name, last_name, email, password, created_at) VALUES ($1, $2, $3, $4, $5)";
-        $result = pg_query_params($conn, $query, [$first_name, $last_name, $email, $hashed_password, date("Y-m-d H:i:s")]);
-
-        if (!$result) {
-            echo "<div class='alert alert-danger'>Error: No se pudo registrar al cliente en PostgreSQL.</div>";
-        } else {
-            // Insertar los mismos datos en Supabase
-            $data = [
-                "first_name" => $first_name,
-                "last_name" => $last_name,
-                "email" => $email,
-                "password" => $hashed_password,
-                "created_at" => date("Y-m-d H:i:s")
-            ];
-
-            // Configurar solicitud HTTP a la API de Supabase
-            $options = [
-                'http' => [
-                    'header' => "Content-Type: application/json\r\nAuthorization: Bearer $supabase_key",
-                    'method' => 'POST',
-                    'content' => json_encode($data),
-                ],
-            ];
-
-            // Crear el contexto de la solicitud
-            $context = stream_context_create($options);
-
-            // Enviar la solicitud a Supabase
-            $result_supabase = file_get_contents("$supabase_url/rest/v1/clientes", false, $context);
-
-            if ($result_supabase === FALSE) {
-                echo "<div class='alert alert-danger'>Error: No se pudo registrar al cliente en Supabase.</div>";
-            } else {
-                // Verificar la respuesta de Supabase
-                $response = json_decode($result_supabase, true);
-                if (isset($response['message']) && $response['message'] !== "success") {
-                    echo "<div class='alert alert-danger'>Error en la respuesta de Supabase: " . $response['message'] . "</div>";
-                } else {
-                    // Mensaje de éxito
-                    echo "<div class='alert alert-success'>Cliente registrado con éxito en PostgreSQL y Supabase.</div>";
-                    // Redirigir o mostrar una confirmación
-                }
-            }
-        }
-    }
+    
+    //$response_data = json_decode($response, true);
+    echo "User has been created: ";// . json_encode($response_data);
 }
+
+// Database connection
+require('../../config/db_connection.php');
+
+// Get data from register form
+$email = $_POST['email'];
+$pass = $_POST['passwd'];
+$pass2 = $_POST['confirm_password'];
+$enc_pass = password_hash($pass, PASSWORD_DEFAULT);
+
+// Validate if email already exists
+$query = "SELECT * FROM users WHERE email = '$email'";
+$result = pg_query($conn, $query);
+$row = pg_fetch_assoc($result);
+
+if ($row) {
+    header('Location: http://127.0.0.1/actividad2/register.html');
+    exit;
+}
+
+// Validate that passwords match
+if ($pass !== $pass2) {
+    die("<br>Las contraseñas no coinciden.");
+}
+
+// Query to insert data into users table
+$query = "INSERT INTO users (email, password) VALUES ('$email', '$enc_pass')";
+
+// Execute the query
+$result = pg_query($conn, $query);
+
+if ($result) {
+    save_data_supabase($email, $enc_pass);
+    echo "<script>alert('Registro exitoso!')</script>";
+    header('Location: http://127.0.0.1/actividad2/login.html');
+    exit;
+} else {
+    echo "Error en el registro: " . pg_last_error($conn);
+}
+
+// Close the database connection
+pg_close($conn);
 ?>
