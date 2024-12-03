@@ -8,7 +8,7 @@
 // Parámetros de conexión
 $host = "localhost";        
 $port = "5432";              
-$dbname = "beta";           
+$dbname = "actividad2";           
 $username = "postgres";      
 $password = "25678";     
 
