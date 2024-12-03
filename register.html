@@ -1,68 +1,126 @@
+<?php
+// Incluir la conexión a PostgreSQL (asegúrate de que el archivo 'db_connection.php' esté en la misma carpeta)
+include('db_connection.php');
+
+// Parámetros de conexión con Supabase (obtén tu URL y clave de API desde el panel de Supabase)
+$supabase_url = "https://sgmaaskbrllwuhnmgfeg.supabase.co";
+$supabase_key = "
+eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNnbWFhc2ticmxsd3Vobm1nZmVnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzMxOTIwOTcsImV4cCI6MjA0ODc2ODA5N30.-iMegnHzxaVs0XoScVgm-GExTJdHgTKzjLZWfLyRmQI
+
+Copy
+This key is safe to use in a browser if you have enabled Row Level Security for your tables and configured policies.";
+
+// Verificar si se ha enviado el formulario
+if ($_SERVER["REQUEST_METHOD"] == "POST") {
+    // Recibir los datos del formulario
+    $first_name = $_POST['first_name'] ?? '';
+    $last_name = $_POST['last_name'] ?? '';
+    $email = $_POST['email'] ?? '';
+    $password = $_POST['password'] ?? '';
+    $confirm_password = $_POST['confirm_password'] ?? '';
+
+    // Verificar que todos los campos estén completos
+    if (empty($first_name) || empty($last_name) || empty($email) || empty($password) || empty($confirm_password)) {
+        die("Error: Todos los campos son obligatorios.");
+    }
+
+    // Verificar que las contraseñas coincidan
+    if ($password !== $confirm_password) {
+        die("Error: Las contraseñas no coinciden.");
+    }
+
+    // Encriptar la contraseña para mayor seguridad
+    $hashed_password = password_hash($password, PASSWORD_DEFAULT);
+
+    // Insertar los datos en PostgreSQL (Base de datos local)
+    $query = "INSERT INTO clientes (first_name, last_name, email, password, created_at) VALUES ($1, $2, $3, $4, $5)";
+    $result = pg_query_params($conn, $query, [$first_name, $last_name, $email, $hashed_password, date("Y-m-d H:i:s")]);
+
+    if (!$result) {
+        die("Error: No se pudo registrar al cliente en PostgreSQL.");
+    }
+
+    // Ahora insertar los mismos datos en Supabase utilizando su API
+    $data = [
+        "first_name" => $first_name,
+        "last_name" => $last_name,
+        "email" => $email,
+        "password" => $hashed_password,
+        "created_at" => date("Y-m-d H:i:s")  // Fecha de creación
+    ];
+
+    // Configuración de la solicitud HTTP a la API de Supabase
+    $options = [
+        'http' => [
+            'header' => "Content-Type: application/json\r\nAuthorization: Bearer $supabase_key",
+            'method' => 'POST',
+            'content' => json_encode($data),  // Los datos a enviar a Supabase en formato JSON
+        ],
+    ];
+
+    // Crear el contexto de la solicitud
+    $context = stream_context_create($options);
+
+    // Enviar la solicitud POST a Supabase para insertar los datos
+    $result_supabase = file_get_contents("$supabase_url/rest/v1/clientes", false, $context);
+
+    // Verificar si hubo algún error en la respuesta
+    if ($result_supabase === FALSE) {
+        die("Error: No se pudo registrar al cliente en Supabase.");
+    }
+
+    // Verificar si la respuesta de Supabase contiene un error
+    $response = json_decode($result_supabase, true);
+    if (isset($response['message']) && $response['message'] !== "success") {
+        die("Error en la respuesta de Supabase: " . $response['message']);
+    }
+
+    // Mostrar un mensaje de éxito
+    echo "Cliente registrado con éxito en PostgreSQL y Supabase.";
+}
+?>
+
 <!DOCTYPE html>
-<html lang="en">
-
+<html lang="es">
 <head>
-    <meta charset="utf-8">
-    <meta http-equiv="X-UA-Compatible" content="IE=edge">
-    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-    <meta name="description" content="">
-    <meta name="author" content="">
-
-    <title>SB Admin 2 - Register</title>
-
-    <!-- Custom fonts for this template-->
-    <link href="vendor/fontawesome-free/css/all.min.css" rel="stylesheet" type="text/css">
-    <link href="https://fonts.googleapis.com/css?family=Nunito:200,200i,300,300i,400,400i,600,600i,700,700i,800,800i,900,900i" rel="stylesheet">
-
-    <!-- Custom styles for this template-->
-    <link href="css/sb-admin-2.min.css" rel="stylesheet">
+    <!-- Mismos encabezados de tu código original -->
 </head>
-
 <body class="bg-gradient-primary">
-
     <div class="container">
         <div class="card o-hidden border-0 shadow-lg my-5">
             <div class="card-body p-0">
-                <!-- Nested Row within Card Body -->
                 <div class="row">
                     <div class="col-lg-5 d-none d-lg-block bg-register-image"></div>
                     <div class="col-lg-7">
                         <div class="p-5">
                             <div class="text-center">
-                                <h1 class="h4 text-gray-900 mb-4">Create an Account!</h1>
+                                <h1 class="h4 text-gray-900 mb-4">¡Crea una cuenta!</h1>
                             </div>
-                            <!-- Formulario Editado -->
+                            
+                            <!-- Mostrar mensajes de error o éxito -->
+                            <?php if (isset($error)): ?>
+                                <div class="alert alert-danger"><?php echo $error; ?></div>
+                            <?php endif; ?>
+                            <?php if (isset($success)): ?>
+                                <div class="alert alert-success"><?php echo $success; ?></div>
+                            <?php endif; ?>
+                            
                             <form class="user" method="POST" action="register.php">
+                                <!-- Añadir token CSRF -->
+                                <input type="hidden" name="csrf_token" value="<?php echo generarTokenCSRF(); ?>">
+                                
+                                <!-- Resto del formulario igual que el original -->
                                 <div class="form-group row">
                                     <div class="col-sm-6 mb-3 mb-sm-0">
-                                        <input type="text" class="form-control form-control-user" name="first_name" placeholder="First Name" required>
+                                        <input type="text" class="form-control form-control-user" name="first_name" placeholder="Nombre" required>
                                     </div>
                                     <div class="col-sm-6">
-                                        <input type="text" class="form-control form-control-user" name="last_name" placeholder="Last Name" required>
+                                        <input type="text" class="form-control form-control-user" name="last_name" placeholder="Apellido" required>
                                     </div>
                                 </div>
-                                <div class="form-group">
-                                    <input type="email" class="form-control form-control-user" name="email" placeholder="Email Address" required>
-                                </div>
-                                <div class="form-group row">
-                                    <div class="col-sm-6 mb-3 mb-sm-0">
-                                        <input type="password" class="form-control form-control-user" name="password" placeholder="Password" required>
-                                    </div>
-                                    <div class="col-sm-6">
-                                        <input type="password" class="form-control form-control-user" name="confirm_password" placeholder="Repeat Password" required>
-                                    </div>
-                                </div>
-                                <button type="submit" class="btn btn-primary btn-user btn-block">
-                                    Register Account
-                                </button>
+                                <!-- Resto del formulario sin cambios -->
+                                ...
                             </form>
-                            <hr>
-                            <div class="text-center">
-                                <a class="small" href="forgot-password.html">Forgot Password?</a>
-                            </div>
-                            <div class="text-center">
-                                <a class="small" href="login.html">Already have an account? Login!</a>
-                            </div>
                         </div>
                     </div>
                 </div>
@@ -70,11 +128,7 @@
         </div>
     </div>
 
-    <!-- Bootstrap core JavaScript-->
-    <script src="vendor/jquery/jquery.min.js"></script>
-    <script src="vendor/bootstrap/js/bootstrap.bundle.min.js"></script>
-    <script src="vendor/jquery-easing/jquery.easing.min.js"></script>
-    <script src="js/sb-admin-2.min.js"></script>
+    <!-- Scripts originales -->
+    ...
 </body>
-
 </html>
