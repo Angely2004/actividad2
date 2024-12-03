@@ -1,9 +1,9 @@
 <?php
 // Configuración para conectar con PostgreSQL
 $host = "localhost";
-$dbname = "mi_base_datos";
+$dbname = "actividad2";
 $user = "postgres";
-$password = "tu_contraseña";
+$password = "25678";
 
 $conn = pg_connect("host=$host dbname=$dbname user=$user password=$password");
 if (!$conn) {
