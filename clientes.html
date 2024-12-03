@@ -34,17 +34,7 @@
                                         </tr>
                                     </thead>
                                     <tbody id="client-list">
-                                        <?php
-
-                                        while ($row = pg_fetch_assoc($result)) {
-                                            echo "<tr>";
-                                            echo "<td>" . htmlspecialchars($row['id']) . "</td>";
-                                            echo "<td>" . htmlspecialchars($row['nombre']) . "</td>";
-                                            echo "<td>" . htmlspecialchars($row['email']) . "</td>";
-                                            echo "<td><button class='btn btn-info'>Ver</button></td>";
-                                            echo "</tr>";
-                                        }
-                                        ?>
+                                        
                                     </tbody>                                    
                                 </table>
                             </div>
